@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -14,22 +15,29 @@ import bsh.Interpreter;
 
 public class Trace
 {
-	public static final String TEST_FILE = "res/Test.java";
-	public static final String ASSIGNMENT_PATTERN = "^(\\w+)\\s+(\\w+)\\s*=\\s*(.*)$";
+	public static final int TEST_NUMBER = 1;
+	public static final String TEST_FILE = "res/Test" + TEST_NUMBER + ".java";
+	public static final String ASSIGNMENT_PATTERN = "^([\\w<>\\[\\]]+)\\s+(\\w+)\\s*=\\s*(.*)$";
 	public static final int VARIABLE_GROUP = 2;
 	
 	public static Pattern assignmentPattern;
 	public static Interpreter i;
+	public static ArrayList<String> code;
+	public static ArrayList<String> refs;
+	
+	public static int lineNumber = 0;
 
 	// Wrapper method for Interpreter.eval
 	public static void eval(String statement)
 	{
+		
 		try
 		{
 			i.eval(statement);
 		}
 		catch (EvalError e)
 		{
+			System.out.println("EvalError: " + statement);
 			e.printStackTrace();
 		}
 	}
@@ -45,6 +53,7 @@ public class Trace
 		}
 		catch (EvalError e)
 		{
+			System.out.println("EvalError: get");
 			e.printStackTrace();
 		}
 		
@@ -91,29 +100,57 @@ public class Trace
 		return null;
 	}
 	
-	public static void main(String[] args)
+	public static String toJSON(String line)
 	{
+		lineNumber++;
+		String json = "{\n\tcode : \"" + line + "\",\n\tlineNumber : " + lineNumber + "\n\tstate : {\n";
+		
+		for (String r : refs)
+		{
+			Object o = get(r);
+			String description = o.toString();
+			
+			// handle if o is an array
+			if (o.getClass().isArray())
+			{
+				description = "{";
+				for (int i = 0; i < Array.getLength(o)-1; i++)
+				{
+					description += Array.get(o, i) + ", ";
+				}
+				description += Array.get(o, Array.getLength(o)-1) + "}";
+			}
+			else if (o instanceof String)
+			{
+				description = "\"" + o + "\"";
+			}
+			
+			json += "\t\t" + r + " : " + description + ",\n";
+		}
+		
+		return json + "\t}\n}";
+	}
+	
+	public static void main(String[] args)
+	{	
 		i = new Interpreter();
 		assignmentPattern = Pattern.compile(ASSIGNMENT_PATTERN);
 		
-		ArrayList<String> code = getCodeFromFile(TEST_FILE);
-		ArrayList<String> refs = new ArrayList<String>();
+		code = getCodeFromFile(TEST_FILE);
+		refs = new ArrayList<String>();
+		
 		String var = null;
 		
 		for (String line : code)
-		{
+		{	
 			eval(line);
-			System.out.println(line);
 			
 			if ((var = isAssignment(line)) != null)
 			{
 				refs.add(var);
 			}
 			
-			for (String r : refs)
-			{
-				System.out.printf("\t%s = %s\n", r, get(r));
-			}
+			System.out.println(toJSON(line));
 		}
 	}
 

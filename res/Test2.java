@@ -1,0 +1,10 @@
+int x1 = 5;
+String message = "Hello, world!";
+x1++;
+double[] values = { 3.14159, 2.71828 };
+LinkedList list = new LinkedList();
+x1 *= 20;
+list.add("Foo");
+list.add(-34);
+String str = message.replace('l', 'L');
+values[1] = 99;
