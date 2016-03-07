@@ -15,7 +15,7 @@ import bsh.Interpreter;
 
 public class Trace
 {
-	public static final int TEST_NUMBER = 1;
+	public static final int TEST_NUMBER = 3;
 	public static final String TEST_FILE = "res/Test" + TEST_NUMBER + ".java";
 	public static final String ASSIGNMENT_PATTERN = "^([\\w<>\\[\\]]+)\\s+(\\w+)\\s*=\\s*(.*)$";
 	public static final int VARIABLE_GROUP = 2;
@@ -25,7 +25,7 @@ public class Trace
 	public static ArrayList<String> code;
 	public static ArrayList<String> refs;
 	
-	public static int lineNumber = 0;
+	public static int step = 0;
 
 	// Wrapper method for Interpreter.eval
 	public static void eval(String statement)
@@ -102,8 +102,8 @@ public class Trace
 	
 	public static String toJSON(String line)
 	{
-		lineNumber++;
-		String json = "{\n\tcode : \"" + line + "\",\n\tlineNumber : " + lineNumber + "\n\tstate : {\n";
+		step++;
+		String json = "{\n\tcode : \"" + line + "\",\n\tstep : " + step + ",\n\tstate : {\n";
 		
 		for (String r : refs)
 		{
@@ -132,11 +132,19 @@ public class Trace
 	}
 	
 	public static void main(String[] args)
-	{	
+	{
 		i = new Interpreter();
 		assignmentPattern = Pattern.compile(ASSIGNMENT_PATTERN);
 		
-		code = getCodeFromFile(TEST_FILE);
+		if (args.length > 0)
+		{
+			code = getCodeFromFile(args[0]);
+		}
+		else
+		{
+			code = getCodeFromFile(TEST_FILE);
+		}
+		
 		refs = new ArrayList<String>();
 		
 		String var = null;
