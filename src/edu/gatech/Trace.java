@@ -15,7 +15,7 @@ import bsh.Interpreter;
 
 public class Trace
 {
-	public static final int TEST_NUMBER = 3;
+	public static final int TEST_NUMBER = 1;
 	public static final String TEST_FILE = "res/Test" + TEST_NUMBER + ".java";
 	public static final String ASSIGNMENT_PATTERN = "^([\\w<>\\[\\]]+)\\s+(\\w+)\\s*=\\s*(.*)$";
 	public static final int VARIABLE_GROUP = 2;
@@ -103,7 +103,7 @@ public class Trace
 	public static String toJSON(String line)
 	{
 		step++;
-		String json = "{\n\tcode : \"" + line + "\",\n\tstep : " + step + ",\n\tstate : {\n";
+		String json = "{\n\t\"code\" : \"" + line + "\",\n\t\"step\" : " + step + ",\n\t\"state\" : {\n";
 		
 		for (String r : refs)
 		{
@@ -125,10 +125,10 @@ public class Trace
 				description = "\"" + o + "\"";
 			}
 			
-			json += "\t\t" + r + " : " + description + ",\n";
+			json += "\t\t\"" + r + "\" : " + description + ",\n";
 		}
 		
-		return json + "\t}\n}";
+		return json + "\t}\n},";
 	}
 	
 	public static void main(String[] args)
