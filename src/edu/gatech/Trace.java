@@ -6,7 +6,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -20,23 +22,21 @@ public class Trace
 	public static final String ASSIGNMENT_PATTERN = "^([\\w<>\\[\\]]+)\\s+(\\w+)\\s*=\\s*(.*)$";
 	public static final String IF_PATTERN = "^if \\((.*)\\)$";
 	public static final String WHILE_PATTERN = "^while \\((.*)\\)$";
+	public static final String FOR_PATTERN = "^for \\((.*); (.*); (.*)\\)";
 	public static final int VARIABLE_GROUP = 2;
-	
-	public static final int NORMAL = 0;
-	public static final int IF = 1;
-	public static final int ELSE = 2;
-	public static final int LOOP = 3;
 	
 	public static Pattern assignmentPattern;
 	public static Pattern ifPattern;
 	public static Pattern whilePattern;
+	public static Pattern forPattern;
 	public static Interpreter i;
 	public static ArrayList<String> code; // code stored line by line
 	public static ArrayList<String> refs; // variable names
+	public static ArrayList<String> scopeRefs;
 	
 	public static int programCounter = 0; // current line of execution
-	public static int programState = NORMAL;
-	public static int loopAnchor = -1;
+	public static ArrayList<Integer> forLoops;
+	public static Deque<Integer> loopAnchors;
 
 	// Wrapper method for Interpreter.eval
 	public static void eval(String statement)
@@ -141,6 +141,24 @@ public class Trace
 		return null;
 	}
 	
+	public static ArrayList<String> isFor(String line)
+	{
+		Matcher m = forPattern.matcher(line);
+		ArrayList<String> components = new ArrayList<String>();
+		
+		if (m.matches())
+		{
+			components.add(m.group(1));
+			components.add(m.group(2));
+			components.add(m.group(3));
+		}
+		
+		if (components.size() > 0)
+			return components;
+		
+		return null;
+	}
+	
 	// Returns true if line is a single { or }
 	public static boolean isBrace(String line)
 	{
@@ -195,6 +213,15 @@ public class Trace
 		}
 	}
 	
+	public static void cleanUpScope()
+	{
+		for (String var : scopeRefs)
+		{
+			refs.remove(var);
+		}
+		scopeRefs.clear();
+	}
+	
 	public static String toJSON(String line)
 	{
 		String json = "{\n\t\"code\" : \"" + line + "\",\n\t\"pc\" : " + (programCounter+1) + ",\n\t\"state\" : {\n";
@@ -231,6 +258,10 @@ public class Trace
 		assignmentPattern = Pattern.compile(ASSIGNMENT_PATTERN);
 		ifPattern = Pattern.compile(IF_PATTERN);
 		whilePattern = Pattern.compile(WHILE_PATTERN);
+		forPattern = Pattern.compile(FOR_PATTERN);
+		loopAnchors = new ArrayDeque<Integer>();
+		forLoops = new ArrayList<Integer>();
+		scopeRefs = new ArrayList<String>();
 		
 		if (args.length > 0)
 		{
@@ -245,6 +276,7 @@ public class Trace
 		
 		String var = null;
 		String condition = null;
+		ArrayList<String> forComponents = new ArrayList<String>();
 		
 		while (programCounter < code.size())
 		{	
@@ -254,6 +286,10 @@ public class Trace
 			{
 				//System.out.println("DEBUG: assignment statement found");
 				refs.add(var);
+				if (loopAnchors.size() > 0)
+				{
+					scopeRefs.add(var);
+				}
 				eval(line);
 				System.out.println(toJSON(line));
 				programCounter++;
@@ -293,22 +329,58 @@ public class Trace
 				System.out.println(toJSON(condition + " -> " + b));
 				if (b)
 				{
-					loopAnchor = programCounter;
-					programState = LOOP;
+					loopAnchors.push(programCounter);
 					scanToNextOpeningBrace();
 				}
 				else
 				{
-					loopAnchor = -1;
-					programState = NORMAL;
+					cleanUpScope();
+					skipNextBlock();
+				}
+			}
+			else if ((forComponents = isFor(line)) != null)
+			{	
+				String init = forComponents.get(0);
+				condition = forComponents.get(1);
+				String update = forComponents.get(2);
+				
+				if (forLoops.contains(programCounter))
+				{
+					eval(update);
+					System.out.println(toJSON(update));
+				}
+				else
+				{
+					forLoops.add(programCounter);
+					var = isAssignment(init);
+					refs.add(var);
+					eval(init);
+					System.out.println(toJSON(init));
+				}
+				
+				eval("last_boolean_expression = " + condition);
+				boolean b = (Boolean) get("last_boolean_expression");
+				System.out.println(toJSON(condition + " -> " + b));
+				
+				if (b)
+				{
+					loopAnchors.push(programCounter);
+					scanToNextOpeningBrace();
+				}
+				else
+				{
+					var = isAssignment(init);
+					refs.remove(var);
+					forLoops.remove(forLoops.indexOf(programCounter));
+					cleanUpScope();
 					skipNextBlock();
 				}
 			}
 			else if (isClosingBrace(line))
 			{
-				if (programState == LOOP)
+				if (!loopAnchors.isEmpty())
 				{
-					programCounter = loopAnchor;
+					programCounter = loopAnchors.pop();
 				}
 				else
 				{
