@@ -1,11 +1,13 @@
-int x1 = 5;
-String message = "Hello, world!";
-x1++;
-double[] values = new double[10];
-LinkedList list = new LinkedList();
-x1 *= 20;
-list.add("Foo");
-list.add(-34);
-String str = message.replace('l', 'L');
-values[7] = 99.99
-values[1] = 3.14;
+int[] values = {4, 1, 2, 3};
+for (int i = values.length; i > 0; i--)
+{
+	for (int j = 0; j < i - 1; j++)
+	{
+		if (values[j] > values[j+1])
+		{
+			int temp = values[j+1];
+			values[j+1] = values[j];
+			values[j] = temp;
+		}
+	}
+}

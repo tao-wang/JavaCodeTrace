@@ -37,6 +37,8 @@ public class Trace
 	public static int programCounter = 0; // current line of execution
 	public static ArrayList<Integer> forLoops;
 	public static Deque<Integer> loopAnchors;
+	
+	public static int step = 0;
 
 	// Wrapper method for Interpreter.eval
 	public static void eval(String statement)
@@ -224,7 +226,9 @@ public class Trace
 	
 	public static String toJSON(String line)
 	{
-		String json = "{\n\t\"code\" : \"" + line + "\",\n\t\"pc\" : " + (programCounter+1) + ",\n\t\"state\" : {\n";
+		step++;
+		
+		String json = "{\n\t\"code\" : \"" + line + "\",\n\t\"pc\" : " + (programCounter+1) + ",\n\t\"step\" : " + step + ",\n\t\"state\" : {\n";
 		
 		for (String r : refs)
 		{

@@ -11,4 +11,3 @@ for (int i = values.length; i > 0; i--)
 		}
 	}
 }
-int y = 99;
