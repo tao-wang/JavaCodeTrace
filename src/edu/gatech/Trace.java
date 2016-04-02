@@ -25,23 +25,23 @@ public class Trace
 	public static final String FOR_PATTERN = "^for \\((.*); (.*); (.*)\\)";
 	public static final int VARIABLE_GROUP = 2;
 	
-	public static Pattern assignmentPattern;
-	public static Pattern ifPattern;
-	public static Pattern whilePattern;
-	public static Pattern forPattern;
-	public static Interpreter i;
-	public static ArrayList<String> code; // code stored line by line
-	public static ArrayList<String> refs; // variable names
-	public static ArrayList<String> scopeRefs;
+	public Pattern assignmentPattern;
+	public Pattern ifPattern;
+	public Pattern whilePattern;
+	public Pattern forPattern;
+	public Interpreter i;
+	public ArrayList<String> code; // code stored line by line
+	public ArrayList<String> refs; // variable names
+	public ArrayList<String> scopeRefs;
 	
-	public static int programCounter = 0; // current line of execution
-	public static ArrayList<Integer> forLoops;
-	public static Deque<Integer> loopAnchors;
+	public int programCounter = 0; // current line of execution
+	public ArrayList<Integer> forLoops;
+	public Deque<Integer> loopAnchors;
 	
-	public static int step = 0;
+	public int step = 0;
 
 	// Wrapper method for Interpreter.eval
-	public static void eval(String statement)
+	public void eval(String statement)
 	{
 		
 		try
@@ -56,7 +56,7 @@ public class Trace
 	}
 	
 	// Wrapper method for Interpreter.get
-	public static Object get(String arg)
+	public Object get(String arg)
 	{
 		Object o = null;
 		
@@ -74,7 +74,7 @@ public class Trace
 	}
 	
 	// Reads code from file
-	public static ArrayList<String> getCodeFromFile(String filePath)
+	public ArrayList<String> getCodeFromFile(String filePath)
 	{
 		ArrayList<String> code = new ArrayList<String>();
 
@@ -103,7 +103,7 @@ public class Trace
 	}
 	
 	// If line is an assignment (i.e. int x = 5), returns the name of the variable reference, null otherwise
-	public static String isAssignment(String line)
+	public String isAssignment(String line)
 	{	
 		Matcher m = assignmentPattern.matcher(line);
 		
@@ -116,7 +116,7 @@ public class Trace
 	}
 	
 	// If line is an if (i.e. if (x < 10), returns the boolean expression as a string, null otherwise
-	public static String isIf(String line)
+	public String isIf(String line)
 	{
 		Matcher m = ifPattern.matcher(line);
 		
@@ -127,12 +127,12 @@ public class Trace
 		return null;
 	}
 	
-	public static boolean isElse(String line)
+	public boolean isElse(String line)
 	{
 		return line.equals("else");
 	}
 	
-	public static String isWhile(String line)
+	public String isWhile(String line)
 	{
 		Matcher m = whilePattern.matcher(line);
 		
@@ -143,7 +143,7 @@ public class Trace
 		return null;
 	}
 	
-	public static ArrayList<String> isFor(String line)
+	public ArrayList<String> isFor(String line)
 	{
 		Matcher m = forPattern.matcher(line);
 		ArrayList<String> components = new ArrayList<String>();
@@ -162,22 +162,22 @@ public class Trace
 	}
 	
 	// Returns true if line is a single { or }
-	public static boolean isBrace(String line)
+	public boolean isBrace(String line)
 	{
 		return isOpeningBrace(line) || isClosingBrace(line);
 	}
 	
-	public static boolean isOpeningBrace(String line)
+	public boolean isOpeningBrace(String line)
 	{
 		return line.equals("{");
 	}
 	
-	public static boolean isClosingBrace(String line)
+	public boolean isClosingBrace(String line)
 	{
 		return line.equals("}");
 	}
 	
-	public static void scanToNextOpeningBrace()
+	public void scanToNextOpeningBrace()
 	{
 		while (!isOpeningBrace(code.get(programCounter)))
 		{
@@ -186,7 +186,7 @@ public class Trace
 		programCounter++;
 	}
 	
-	public static void scanToNextClosingBrace()
+	public void scanToNextClosingBrace()
 	{
 		while (!isClosingBrace(code.get(programCounter)))
 		{
@@ -195,7 +195,7 @@ public class Trace
 		programCounter++;
 	}
 	
-	public static void skipNextBlock()
+	public void skipNextBlock()
 	{
 		int braceCounter = 1;
 		scanToNextOpeningBrace();
@@ -215,7 +215,7 @@ public class Trace
 		}
 	}
 	
-	public static void cleanUpScope()
+	public void cleanUpScope()
 	{
 		for (String var : scopeRefs)
 		{
@@ -224,7 +224,7 @@ public class Trace
 		scopeRefs.clear();
 	}
 	
-	public static String toJSON(String line)
+	public String toJSON(String line)
 	{
 		step++;
 		
@@ -256,7 +256,7 @@ public class Trace
 		return json + "\t}\n},";
 	}
 	
-	public static void main(String[] args)
+	public Trace(String fileName)
 	{
 		i = new Interpreter();
 		assignmentPattern = Pattern.compile(ASSIGNMENT_PATTERN);
@@ -267,9 +267,9 @@ public class Trace
 		forLoops = new ArrayList<Integer>();
 		scopeRefs = new ArrayList<String>();
 		
-		if (args.length > 0)
+		if (fileName != null)
 		{
-			code = getCodeFromFile(args[0]);
+			code = getCodeFromFile(fileName);
 		}
 		else
 		{
