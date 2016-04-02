@@ -41,6 +41,23 @@ public class Trace
 	public Deque<Integer> loopAnchors;
 	
 	public int step = 0;
+	
+	private String jsonForm;
+	
+	public String getJSON()
+	{
+		return jsonForm;
+	}
+	
+	public void jsonPrintln(String s)
+	{
+		jsonForm += s + "\n";
+	}
+	
+	public void jsonPrint(String s)
+	{
+		jsonForm += s;
+	}
 
 	// Wrapper method for Interpreter.eval
 	public void eval(String statement)
@@ -297,6 +314,7 @@ public class Trace
 		Ref var = null;
 		String condition = null;
 		ArrayList<String> forComponents = new ArrayList<String>();
+		jsonForm = "";
 		
 		while (programCounter < code.size())
 		{	
@@ -312,7 +330,7 @@ public class Trace
 					scopeRefs.add(var.name);
 				}
 				eval(line);
-				System.out.println(toJSON(line));
+				jsonPrintln(toJSON(line));
 				programCounter++;
 			}
 			else if ((condition = isIf(line)) != null)
@@ -320,7 +338,7 @@ public class Trace
 				//System.out.println("DEBUG: conditional statement found");
 				eval("last_boolean_expression = " + condition);
 				boolean b = (Boolean) get("last_boolean_expression");
-				System.out.println(toJSON(condition + " -> " + b));
+				jsonPrintln(toJSON(condition + " -> " + b));
 				if (b)
 				{
 					scanToNextOpeningBrace();
@@ -347,7 +365,7 @@ public class Trace
 			{
 				eval("last_boolean_expression = " + condition);
 				boolean b = (Boolean) get("last_boolean_expression");
-				System.out.println(toJSON(condition + " -> " + b));
+				jsonPrintln(toJSON(condition + " -> " + b));
 				if (b)
 				{
 					loopAnchors.push(programCounter);
@@ -368,7 +386,7 @@ public class Trace
 				if (forLoops.contains(programCounter))
 				{
 					eval(update);
-					System.out.println(toJSON(update));
+					jsonPrintln(toJSON(update));
 				}
 				else
 				{
@@ -378,7 +396,7 @@ public class Trace
 					refTypes.put(var.name, var.type);
 					scopeRefs.add(var.name);
 					eval(init);
-					System.out.println(toJSON(init));
+					jsonPrintln(toJSON(init));
 				}
 				
 				eval("last_boolean_expression = " + condition);
@@ -414,7 +432,7 @@ public class Trace
 			{
 				//System.out.println("DEBUG: executing statement");
 				eval(line);
-				System.out.println(toJSON(line));
+				jsonPrintln(toJSON(line));
 				programCounter++;
 			}
 			else
