@@ -9,6 +9,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,6 +33,7 @@ public class Trace
 	public Interpreter i;
 	public ArrayList<String> code; // code stored line by line
 	public ArrayList<String> refs; // variable names
+	public HashMap<String, String> refTypes;
 	public ArrayList<String> scopeRefs;
 	
 	public int programCounter = 0; // current line of execution
@@ -103,13 +105,25 @@ public class Trace
 	}
 	
 	// If line is an assignment (i.e. int x = 5), returns the name of the variable reference, null otherwise
-	public String isAssignment(String line)
+//	public String isAssignment(String line)
+//	{	
+//		Matcher m = assignmentPattern.matcher(line);
+//		
+//		if (m.matches())
+//		{
+//			return m.group(VARIABLE_GROUP);
+//		}
+//		
+//		return null;
+//	}
+	
+	public Ref isAssignment(String line)
 	{	
 		Matcher m = assignmentPattern.matcher(line);
 		
 		if (m.matches())
 		{
-			return m.group(VARIABLE_GROUP);
+			return new Ref(m.group(VARIABLE_GROUP), m.group(1));
 		}
 		
 		return null;
@@ -220,6 +234,7 @@ public class Trace
 		for (String var : scopeRefs)
 		{
 			refs.remove(var);
+			refTypes.remove(var);
 		}
 		scopeRefs.clear();
 	}
@@ -250,7 +265,7 @@ public class Trace
 				description = "\"" + o + "\"";
 			}
 			
-			json += "\t\t\"" + r + "\" : " + description + ",\n";
+			json += "\t\t\"" + r + "\" : {\n\t\t\t\"type\" : \"" + refTypes.get(r) + "\",\n\t\t\t\"hashCode\" : " + o.hashCode() + ",\n\t\t\t\"contents\" : " + description + "\n\t\t},\n";
 		}
 		
 		return json + "\t}\n},";
@@ -277,8 +292,9 @@ public class Trace
 		}
 		
 		refs = new ArrayList<String>();
+		refTypes = new HashMap<String, String>();
 		
-		String var = null;
+		Ref var = null;
 		String condition = null;
 		ArrayList<String> forComponents = new ArrayList<String>();
 		
@@ -289,10 +305,11 @@ public class Trace
 			if ((var = isAssignment(line)) != null)
 			{
 				//System.out.println("DEBUG: assignment statement found");
-				refs.add(var);
+				refs.add(var.name);
+				refTypes.put(var.name, var.type);
 				if (loopAnchors.size() > 0)
 				{
-					scopeRefs.add(var);
+					scopeRefs.add(var.name);
 				}
 				eval(line);
 				System.out.println(toJSON(line));
@@ -357,7 +374,9 @@ public class Trace
 				{
 					forLoops.add(programCounter);
 					var = isAssignment(init);
-					refs.add(var);
+					refs.add(var.name);
+					refTypes.put(var.name, var.type);
+					scopeRefs.add(var.name);
 					eval(init);
 					System.out.println(toJSON(init));
 				}
@@ -373,8 +392,8 @@ public class Trace
 				}
 				else
 				{
-					var = isAssignment(init);
-					refs.remove(var);
+					//var = isAssignment(init);
+					//refs.remove(var.name);
 					forLoops.remove(forLoops.indexOf(programCounter));
 					cleanUpScope();
 					skipNextBlock();
