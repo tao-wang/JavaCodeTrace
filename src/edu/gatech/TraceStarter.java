@@ -27,8 +27,8 @@ public class TraceStarter {
 	
 	public static void main(String[] args)
 	{
-//		Trace tr = new Trace("res/Test1.java");
-//		System.out.println(tr.getJSON());
+		Trace tr = new Trace("res/Test1.java");
+		System.out.println(tr.getJSONArrayList());
 		
 		javax.swing.SwingUtilities.invokeLater(new Runnable() {
             public void run() {

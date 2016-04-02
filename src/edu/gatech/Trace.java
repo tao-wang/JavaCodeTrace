@@ -42,11 +42,17 @@ public class Trace
 	
 	public int step = 0;
 	
+	private ArrayList<String> jsons;
 	private String jsonForm;
 	
 	public String getJSON()
 	{
 		return jsonForm;
+	}
+	
+	public ArrayList<String> getJSONArrayList()
+	{
+		return jsons;
 	}
 	
 	public void jsonPrintln(String s)
@@ -284,12 +290,16 @@ public class Trace
 			
 			json += "\t\t\"" + r + "\" : {\n\t\t\t\"type\" : \"" + refTypes.get(r) + "\",\n\t\t\t\"hashCode\" : " + o.hashCode() + ",\n\t\t\t\"contents\" : " + description + "\n\t\t},\n";
 		}
+		json += "\t}\n},";
 		
-		return json + "\t}\n},";
+		jsons.add(json);
+		
+		return json;
 	}
 	
 	public Trace(String fileName)
 	{
+		jsons = new ArrayList<String>();
 		i = new Interpreter();
 		assignmentPattern = Pattern.compile(ASSIGNMENT_PATTERN);
 		ifPattern = Pattern.compile(IF_PATTERN);
