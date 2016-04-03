@@ -39,7 +39,7 @@ public class TraceStarter {
         Container contentPane = frame.getContentPane();
         contentPane.setLayout(new FlowLayout());
         
-        trace = new Trace("res/Test2.java");
+        trace = new Trace("res/Test3.java");
         //System.out.println(trace.getJSON());
         
         textArea = new JTextArea(TA_ROWS, TA_COLS);

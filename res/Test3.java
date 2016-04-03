@@ -1,4 +1,4 @@
-int[] values = {4, 1, 2, 3};
+int[] values = {4, 3, 2, 1};
 for (int i = values.length; i > 0; i--)
 {
 	for (int j = 0; j < i - 1; j++)
