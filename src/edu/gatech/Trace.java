@@ -43,6 +43,7 @@ public class Trace
 	public int step = 0;
 	
 	private ArrayList<String> jsons;
+	private ArrayList<Snapshot> snaps;
 	private String jsonForm;
 	
 	public String getJSON()
@@ -53,6 +54,11 @@ public class Trace
 	public ArrayList<String> getJSONArrayList()
 	{
 		return jsons;
+	}
+	
+	public ArrayList<Snapshot> getSnapshots()
+	{
+		return snaps;
 	}
 	
 	public void jsonPrintln(String s)
@@ -266,7 +272,8 @@ public class Trace
 	{
 		step++;
 		
-		String json = "{\n\t\"code\" : \"" + line + "\",\n\t\"pc\" : " + (programCounter+1) + ",\n\t\"step\" : " + step + ",\n\t\"state\" : {\n";
+		String json = "{\n\t\"code\" : \"" + line + "\",\n\t\"pc\" : " + (programCounter+1) + ",\n\t\"step\" : " + step + ",\n\t\"state\" : [ \n";
+		Snapshot snap = new Snapshot(line, programCounter+1, step);
 		
 		for (String r : refs)
 		{
@@ -288,11 +295,26 @@ public class Trace
 				description = "\"" + o + "\"";
 			}
 			
-			json += "\t\t\"" + r + "\" : {\n\t\t\t\"type\" : \"" + refTypes.get(r) + "\",\n\t\t\t\"hashCode\" : " + o.hashCode() + ",\n\t\t\t\"contents\" : " + description + "\n\t\t},\n";
+			json += "\t\t\"" + r + "\" : {\n\t\t\t\"type\" : \"" + refTypes.get(r) + "\",\n\t\t\t\"hashCode\" : " + o.hashCode() + ",\n\t\t\t\"contents\" : " + description;
+			
+			Ref currentRef = new Ref(r, refTypes.get(r));
+			currentRef.hashCode = o.hashCode();
+			currentRef.contents = description;
+			snap.add(currentRef);
+			
+			if (refs.indexOf(r) == refs.size() - 1)
+			{
+				json += "\n\t\t}\n";
+			}
+			else
+			{
+				json += "\n\t\t},\n";
+			}
 		}
-		json += "\t}\n},";
+		json += "\t]\n}";
 		
 		jsons.add(json);
+		snaps.add(snap);
 		
 		return json;
 	}
@@ -300,6 +322,7 @@ public class Trace
 	public Trace(String fileName)
 	{
 		jsons = new ArrayList<String>();
+		snaps = new ArrayList<Snapshot>();
 		i = new Interpreter();
 		assignmentPattern = Pattern.compile(ASSIGNMENT_PATTERN);
 		ifPattern = Pattern.compile(IF_PATTERN);
@@ -411,7 +434,7 @@ public class Trace
 				
 				eval("last_boolean_expression = " + condition);
 				boolean b = (Boolean) get("last_boolean_expression");
-				System.out.println(toJSON(condition + " -> " + b));
+				jsonPrintln(toJSON(condition + " -> " + b));
 				
 				if (b)
 				{

@@ -17,7 +17,7 @@ public class TraceStarter {
         JFrame frame = new JFrame("TraceStarter");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
  
-        frame.add(new MyCanvas());
+        frame.add(new MyCanvas("res/Test1.java"));
         frame.pack();
         frame.setLocationRelativeTo(null);
  
@@ -27,8 +27,18 @@ public class TraceStarter {
 	
 	public static void main(String[] args)
 	{
-		Trace tr = new Trace("res/Test1.java");
-		System.out.println(tr.getJSONArrayList());
+//		Trace tr = new Trace("res/Test1.java");
+//		Snapshot step16 = tr.getSnapshots().get(15);
+//		System.out.println("code: " + step16.code);
+//		System.out.println("pc: " + step16.pc);
+//		System.out.println("step: " + step16.step);
+//		for (Ref r : step16.state)
+//		{
+//			System.out.println(r.name);
+//			System.out.println("\t" + r.type);
+//			System.out.println("\t" + r.hashCode);
+//			System.out.println("\t" + r.contents);
+//		}
 		
 		javax.swing.SwingUtilities.invokeLater(new Runnable() {
             public void run() {
@@ -43,18 +53,42 @@ class MyCanvas extends JPanel {
 	public static final int WIDTH = 800;
 	public static final int HEIGHT = 600;
 	
+	private int currentSnapshot;
+	private ArrayList<Snapshot> snaps;
+	
 	ArrayList<Paintable> objects;
 	
-	public MyCanvas() {
+	public MyCanvas(String file) {
         setBorder(BorderFactory.createLineBorder(Color.black));
-        objects = new ArrayList<Paintable>();
-        MyTextBox box1 = new MyTextBox("Hello, World. I'm Tao!", 20, 30);
-        MyTextBox box2 = new MyTextBox("Foo bar baz qux", 400, 300);
-        MyArrow arrow1 = new MyArrow(box1, box2);
-        objects.add(box1);
-        objects.add(box2);
-        objects.add(arrow1);
+        currentSnapshot = 0;
+        Trace tr = new Trace(file);
+        snaps = tr.getSnapshots();
+        
+//        objects = new ArrayList<Paintable>();
+//        MyTextBox box1 = new MyTextBox("Hello, World. I'm Tao!", 20, 30);
+//        MyTextBox box2 = new MyTextBox("Foo bar baz qux", 400, 300);
+//        MyArrow arrow1 = new MyArrow(box1, box2);
+//        objects.add(box1);
+//        objects.add(box2);
+//        objects.add(arrow1);
     }
+	
+	public void addObjectsToPaint()
+	{
+		
+	}
+	
+	public void nextSnapshot()
+	{
+		if (currentSnapshot < snaps.size())
+			currentSnapshot++;
+	}
+	
+	public void prevSnapshot()
+	{
+		if (currentSnapshot > 0)
+			currentSnapshot--;
+	}
 
     public Dimension getPreferredSize() {
         return new Dimension(WIDTH, HEIGHT);
