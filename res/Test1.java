@@ -1,7 +1,9 @@
-int[] values = new int[4];
+String message = "Hello, world!";
+String message2 = message;
+message += " My name is Tao!";
+int[] values = {1, 2, 3, 4};
 int[] values2 = values;
-for (int i = 0; i < values.length; i++)
-{
-	values[i] = (i+1)*(i+1);
-}
-;
+values[3] = 999;
+double x = 7.2;
+double x2 = x;
+x += 12;

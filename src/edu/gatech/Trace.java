@@ -35,6 +35,8 @@ public class Trace
 	public ArrayList<String> refs; // variable names
 	public HashMap<String, String> refTypes;
 	public ArrayList<String> scopeRefs;
+	public ArrayList<String> ifRefs; // DANGER!
+	public boolean withinIf = false;
 	
 	public int programCounter = 0; // current line of execution
 	public ArrayList<Integer> forLoops;
@@ -45,6 +47,8 @@ public class Trace
 	private ArrayList<String> jsons;
 	private ArrayList<Snapshot> snaps;
 	private String jsonForm;
+	
+	public String rawCode = "";
 	
 	public String getJSON()
 	{
@@ -118,6 +122,7 @@ public class Trace
 			
 			while ((line = reader.readLine()) != null)
 			{
+				rawCode += line + "\n";
 				code.add(line.trim());
 			}
 		}
@@ -260,6 +265,7 @@ public class Trace
 	
 	public void cleanUpScope()
 	{
+		System.out.println("cleaning up scope: " + scopeRefs);
 		for (String var : scopeRefs)
 		{
 			refs.remove(var);
@@ -331,6 +337,7 @@ public class Trace
 		loopAnchors = new ArrayDeque<Integer>();
 		forLoops = new ArrayList<Integer>();
 		scopeRefs = new ArrayList<String>();
+		ifRefs = new ArrayList<String>();
 		
 		if (fileName != null)
 		{
@@ -362,6 +369,10 @@ public class Trace
 				{
 					scopeRefs.add(var.name);
 				}
+				if (withinIf)
+				{
+					ifRefs.add(var.name);
+				}
 				eval(line);
 				jsonPrintln(toJSON(line));
 				programCounter++;
@@ -371,10 +382,12 @@ public class Trace
 				//System.out.println("DEBUG: conditional statement found");
 				eval("last_boolean_expression = " + condition);
 				boolean b = (Boolean) get("last_boolean_expression");
-				jsonPrintln(toJSON(condition + " -> " + b));
+				//jsonPrintln(toJSON(condition + " -> " + b));
+				jsonPrintln(toJSON(condition));
 				if (b)
 				{
 					scanToNextOpeningBrace();
+					withinIf = true;
 				}
 				else
 				{
@@ -392,13 +405,15 @@ public class Trace
 				else
 				{
 					scanToNextOpeningBrace();
+					withinIf = true;
 				}
 			}
 			else if ((condition = isWhile(line)) != null)
 			{
 				eval("last_boolean_expression = " + condition);
 				boolean b = (Boolean) get("last_boolean_expression");
-				jsonPrintln(toJSON(condition + " -> " + b));
+				//jsonPrintln(toJSON(condition + " -> " + b));
+				jsonPrintln(toJSON(condition));
 				if (b)
 				{
 					loopAnchors.push(programCounter);
@@ -434,7 +449,8 @@ public class Trace
 				
 				eval("last_boolean_expression = " + condition);
 				boolean b = (Boolean) get("last_boolean_expression");
-				jsonPrintln(toJSON(condition + " -> " + b));
+				//jsonPrintln(toJSON(condition + " -> " + b));
+				jsonPrintln(toJSON(condition));
 				
 				if (b)
 				{
@@ -452,6 +468,17 @@ public class Trace
 			}
 			else if (isClosingBrace(line))
 			{
+				if (withinIf)
+				{
+					withinIf = false;
+					for (String ifVar : ifRefs)
+					{
+						scopeRefs.remove(ifVar);
+						refs.remove(ifVar);
+					}
+					ifRefs.clear();
+				}
+				
 				if (!loopAnchors.isEmpty())
 				{
 					programCounter = loopAnchors.pop();
