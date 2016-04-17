@@ -8,12 +8,20 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.text.BadLocationException;
@@ -21,6 +29,12 @@ import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Highlighter;
 
 public class TraceStarter {
+	static final String NEW = "New";
+	static final String OPEN = "Open";
+	static final String SAVE = "Save";
+	static final String SAVE_AS = "Save As...";
+	static final String EXIT = "Exit";
+	
 	static final int TA_ROWS = 32;
 	static final int TA_COLS = 40;
 	
@@ -61,10 +75,34 @@ public class TraceStarter {
         next = new JButton("Next");
         next.addActionListener(listener);
         
+        // Menu bar
+        MyMenuActionListener al = new MyMenuActionListener(textArea, canvas); 
+        
+        JMenuBar menuBar = new JMenuBar();
+        JMenu fileMenu = new JMenu("File");
+        fileMenu.setMnemonic(KeyEvent.VK_F);
+        JMenuItem newFile = new JMenuItem(NEW, KeyEvent.VK_N);
+        newFile.addActionListener(al);
+        JMenuItem openFile = new JMenuItem(OPEN, KeyEvent.VK_O);
+        openFile.addActionListener(al);
+        JMenuItem saveFile = new JMenuItem(SAVE, KeyEvent.VK_O);
+        saveFile.addActionListener(al);
+        JMenuItem saveFileAs = new JMenuItem(SAVE_AS, KeyEvent.VK_O);
+        saveFileAs.addActionListener(al);
+        JMenuItem exit = new JMenuItem(EXIT, KeyEvent.VK_O);
+        exit.addActionListener(al);
+        fileMenu.add(newFile);
+        fileMenu.add(openFile);
+        fileMenu.add(saveFile);
+        fileMenu.add(saveFileAs);
+        fileMenu.add(exit);
+        menuBar.add(fileMenu);
+        
         frame.add(textArea);
         frame.add(canvas);
         frame.add(prev);
         frame.add(next);
+        frame.setJMenuBar(menuBar);
         
         frame.pack();
         frame.setLocationRelativeTo(null);
@@ -94,6 +132,115 @@ public class TraceStarter {
             }
         });
 	}
+}
+
+class MyMenuActionListener implements ActionListener {
+
+	private JTextArea textArea;
+	private MyCanvas canvas;
+	private String currentPath;
+	private boolean hasOpened;
+	private File currentFile;
+	
+	public MyMenuActionListener(JTextArea textArea, MyCanvas canvas)
+	{
+		this.textArea = textArea;
+		this.canvas = canvas;
+		currentPath = System.getProperty("user.dir");
+		hasOpened = false;
+		currentFile = null;
+	}
+	
+	public void saveFileAs(File file)
+	{
+		try {
+			PrintWriter out = new PrintWriter(file);
+			out.println(textArea.getText());
+			out.close();
+			TraceStarter.trace = new Trace(file.getAbsolutePath());
+			canvas.setTrace(TraceStarter.trace);
+			TraceStarter.prev.setEnabled(true);
+			TraceStarter.next.setEnabled(true);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+	
+	@Override
+	public void actionPerformed(ActionEvent arg0) {
+		// System.out.println(arg0.getActionCommand());
+		String cmd = arg0.getActionCommand();
+		
+		if (cmd.equals(TraceStarter.NEW))
+		{
+			textArea.setText("");
+			canvas.setTrace(null);
+			TraceStarter.prev.setEnabled(false);
+			TraceStarter.next.setEnabled(false);
+			currentFile = null;
+		}
+		else if (cmd.equals(TraceStarter.OPEN))
+		{
+			JFileChooser fc = new JFileChooser(currentPath);
+			int result = fc.showOpenDialog(TraceStarter.canvas);
+			// System.out.printf("%d, %s\n", result, fc.getSelectedFile());
+			if (result == JFileChooser.APPROVE_OPTION)
+			{
+				currentPath = fc.getSelectedFile().getAbsolutePath();
+				TraceStarter.trace = new Trace(currentPath);
+				canvas.setTrace(TraceStarter.trace);
+				textArea.setText(TraceStarter.trace.rawCode);
+				Highlighter.HighlightPainter painter = new DefaultHighlighter.DefaultHighlightPainter(Color.YELLOW);
+		        try {
+					textArea.getHighlighter().addHighlight(textArea.getLineStartOffset(0), textArea.getLineEndOffset(0), painter);
+				} catch (BadLocationException e) {
+					e.printStackTrace();
+				}
+		        hasOpened = true;
+		        currentFile = fc.getSelectedFile();
+		        TraceStarter.prev.setEnabled(true);
+		        TraceStarter.next.setEnabled(true);
+			}
+		}
+		else if (cmd.equals(TraceStarter.SAVE))
+		{
+			if (currentFile != null)
+			{
+				saveFileAs(currentFile);
+			}
+			else
+			{
+				JFileChooser fc = new JFileChooser(currentPath);
+				int result = fc.showSaveDialog(TraceStarter.canvas);
+				if (result == JFileChooser.APPROVE_OPTION)
+				{
+					currentFile = fc.getSelectedFile();
+					saveFileAs(currentFile);
+					hasOpened = true;
+					currentPath = currentFile.getAbsolutePath();
+				}
+			}
+		}
+		else if (cmd.equals(TraceStarter.SAVE_AS))
+		{
+			JFileChooser fc = new JFileChooser(currentPath);
+			int result = fc.showSaveDialog(TraceStarter.canvas);
+			if (result == JFileChooser.APPROVE_OPTION)
+			{
+				currentFile = fc.getSelectedFile();
+				saveFileAs(currentFile);
+				hasOpened = true;
+				currentPath = currentFile.getAbsolutePath();
+			}
+		}
+		else if (cmd.equals(TraceStarter.EXIT))
+		{
+			System.exit(0);
+		}
+	}
+	
 }
 
 class MyActionListener implements ActionListener {
@@ -162,8 +309,7 @@ class MyCanvas extends JPanel {
 	
 	public MyCanvas(Trace trace) {
         setBorder(BorderFactory.createLineBorder(Color.black));
-        currentSnapshot = 0;
-        snaps = trace.getSnapshots();
+        setTrace(trace);
         
 //        objects = new ArrayList<Paintable>();
 //        MyTextBox box1 = new MyTextBox("Hello, World. I'm Tao!", 20, 30);
@@ -172,19 +318,37 @@ class MyCanvas extends JPanel {
 //        objects.add(box1);
 //        objects.add(box2);
 //        objects.add(arrow1);
-        objects = new ArrayList<Paintable>();
-        hashCodeConnections = new HashMap<Integer, Integer>();
-        addObjectsToPaint();
+
     }
+	
+	public void setTrace(Trace trace)
+	{
+		currentSnapshot = 0;
+		objects = new ArrayList<Paintable>();
+		hashCodeConnections = new HashMap<Integer, Integer>();
+		if (trace != null)
+		{
+			snaps = trace.getSnapshots();
+			addObjectsToPaint();
+		}
+		else
+			snaps = new ArrayList<Snapshot>();
+	}
 	
 	public Snapshot getCurrentSnapshot()
 	{
+		if (snaps.size() == 0)
+			return null;
+		
 		return snaps.get(currentSnapshot);
 	}
 	
 	public void addObjectsToPaint()
 	{
 		reset();
+		
+		if (snaps.size() == 0)
+			return;
 		
 		Snapshot state = snaps.get(currentSnapshot);
 		for (Ref r : state.state)
@@ -258,6 +422,8 @@ class MyCanvas extends JPanel {
 
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
+        
+        if (snaps.size() == 0) return;
         
         Snapshot state = snaps.get(currentSnapshot);
         g.drawString("code: " + state.code, 10, 30);

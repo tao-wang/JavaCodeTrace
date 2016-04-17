@@ -265,7 +265,7 @@ public class Trace
 	
 	public void cleanUpScope()
 	{
-		System.out.println("cleaning up scope: " + scopeRefs);
+		// System.out.println("cleaning up scope: " + scopeRefs);
 		for (String var : scopeRefs)
 		{
 			refs.remove(var);
